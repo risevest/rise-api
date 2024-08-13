@@ -1,6 +1,6 @@
 #!/bin/bash
 
-OUTPUT_FILE="node_modules/rise-api/src/contract.ts"
+OUTPUT_FILE="node_modules/@risemaxi/api-client/src/contract.ts"
 
 generate_file() {
   local INPUT_FILE="$1"
