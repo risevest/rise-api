@@ -1,4 +1,4 @@
-import { Static, TSchema } from "@sinclair/typebox";
+import { Static, StaticDecode, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import {
   useMutation,
@@ -24,20 +24,26 @@ import {
 } from "./contract.js";
 
 export class RiseApiClient {
-  baseUrl: string = "";
+  #baseUrl: string = "";
+  #enabledParsing: boolean = true;
 
-  constructor(public fetcher: Fetcher) {}
+  constructor(public fetcher: Fetcher, enableParsing = true) {
+    this.#enabledParsing = enableParsing;
+  }
 
   setBaseUrl(baseUrl: string) {
-    this.baseUrl = baseUrl;
+    this.#baseUrl = baseUrl;
     return this;
   }
 
-  parse<T extends TSchema>(schema: T, value: unknown) {
-    return Value.Parse(schema, value);
+  parse<T extends TSchema>(schema: T, value: unknown): StaticDecode<T, []> {
+    return this.#enabledParsing ? Value.Parse(schema, value) : value;
   }
 
-  parseAsync<T extends TSchema>(schema: T, value: Promise<unknown>) {
+  parseAsync<T extends TSchema>(
+    schema: T,
+    value: Promise<unknown>
+  ): Promise<StaticDecode<T, []>> {
     return value.then((res) => this.parse(schema, res));
   }
 
@@ -51,7 +57,7 @@ export class RiseApiClient {
       PostSchema.response,
       this.fetcher(
         "post",
-        this.baseUrl + path,
+        this.#baseUrl + path,
         this.parse(PostSchema.parameters, params[0])
       )
     );
@@ -67,7 +73,7 @@ export class RiseApiClient {
       GetSchema.response,
       this.fetcher(
         "get",
-        this.baseUrl + path,
+        this.#baseUrl + path,
         this.parse(GetSchema.parameters, params[0])
       )
     );
@@ -86,7 +92,7 @@ export class RiseApiClient {
       PatchSchema.response,
       this.fetcher(
         "patch",
-        this.baseUrl + path,
+        this.#baseUrl + path,
         this.parse(PatchSchema.parameters, params[0])
       )
     );
@@ -104,7 +110,7 @@ export class RiseApiClient {
       PatchSchema.response,
       this.fetcher(
         "delete",
-        this.baseUrl + path,
+        this.#baseUrl + path,
         this.parse(PatchSchema.parameters, params[0])
       )
     );
