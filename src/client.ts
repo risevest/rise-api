@@ -132,8 +132,12 @@ export class RiseApiClient {
   }
 }
 
-export function createRiseApiClient(fetcher: Fetcher, baseUrl?: string) {
-  return new RiseApiClient(fetcher).setBaseUrl(baseUrl ?? "");
+export function createRiseApiClient(
+  fetcher: Fetcher,
+  baseUrl?: string,
+  enableParsing?: boolean
+) {
+  return new RiseApiClient(fetcher, enableParsing).setBaseUrl(baseUrl ?? "");
 }
 
 export class RiseApiHooks {
