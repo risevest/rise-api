@@ -2,6 +2,24 @@
   "name": "rise-api",
   "version": "0.0.1",
   "description": "Client Library for Rise",
+  "type": "module",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "bin"
+  ],
+  "keywords": [
+    "api",
+    "rise",
+    "cli"
+  ],
+  "author": {
+    "name": "Balogunofafrica",
+    "url": "https://github.com/Balogunofafrica"
+  },
   "bin": {
     "rise-api": "./bin/cli.sh"
   },
