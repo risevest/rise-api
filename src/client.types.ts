@@ -1,3 +1,4 @@
+// @ts-expect-error file generated at build time
 import type { Endpoint, EndpointParameters, Method } from "./contract.ts";
 
 export type HttpMethod = "post" | "get" | "patch" | "delete";

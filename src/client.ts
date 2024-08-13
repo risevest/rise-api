@@ -21,6 +21,7 @@ import {
   GetEndpoints,
   PatchEndpoints,
   PostEndpoints,
+  // @ts-expect-error file generated at build time
 } from "./contract.js";
 
 export class RiseApiClient {
