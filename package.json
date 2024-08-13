@@ -2,6 +2,9 @@
   "name": "rise-api",
   "version": "0.0.1",
   "description": "Client Library for Rise",
+  "bin": {
+    "rise-api": "./bin/cli.sh"
+  },
   "peerDependencies": {
     "@sinclair/typebox": ">=0.33.4",
     "react-query": ">3.31.0"
