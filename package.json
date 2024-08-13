@@ -1,5 +1,5 @@
 {
-  "name": "rise-api",
+  "name": "@risemaxi/api-client",
   "version": "0.0.1",
   "description": "Client Library for Rise",
   "type": "module",
