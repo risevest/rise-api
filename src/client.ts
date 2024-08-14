@@ -1,4 +1,4 @@
-import { Static, StaticDecode, TSchema } from "@sinclair/typebox";
+import { Static, StaticDecode, TAny, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import {
   MutationKey,
@@ -10,7 +10,6 @@ import {
   useMutation,
   UseMutationOptions,
   UseMutationResult,
-  useQueries,
   useQuery,
   useQueryClient,
   UseQueryOptions,
@@ -22,6 +21,7 @@ import type {
   HttpMethod,
   MaybeOptionalArg,
   MaybeOptionalOptions,
+  EndpointMethodMap,
 } from "./client.types.js";
 import {
   DeleteEndpoints,
@@ -44,29 +44,45 @@ export class RiseApiClient {
     return this;
   }
 
-  parse<T extends TSchema>(schema: T, value: unknown): StaticDecode<T, []> {
+  #parse<T extends TSchema>(schema: T, value: unknown): StaticDecode<T, []> {
     return this.#enabledParsing ? Value.Parse(schema, value) : value;
   }
 
-  parseAsync<T extends TSchema>(
+  #parseAsync<T extends TSchema>(
     schema: T,
     value: Promise<unknown>
   ): Promise<StaticDecode<T, []>> {
-    return value.then((res) => this.parse(schema, res));
+    return value.then((res) => this.#parse(schema, res));
   }
 
-  post<Path extends keyof PostEndpoints, TEndpoint extends PostEndpoints[Path]>(
-    path: Path,
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): Promise<Static<TEndpoint>["response"]> {
-    const PostSchema = EndpointByMethod.post[path].properties;
+  #constructPath(template: string, params?: Record<string, string>) {
+    if (!params) {
+      return template;
+    }
 
-    return this.parseAsync(
-      PostSchema.response,
+    return template.replace(/{(\w+)}/g, (match, key) => {
+      if (key in params) {
+        return params[key];
+      }
+      return match;
+    });
+  }
+
+  #request<M extends HttpMethod, P extends keyof EndpointMethodMap[M]>(
+    method: M,
+    path: P,
+    ...params: any[]
+  ): Promise<any> {
+    const parameters = params[0];
+    const finalPath = this.#constructPath(path as string, parameters?.path);
+    const EndpointSchema = (EndpointByMethod[method][path] as TAny).properties;
+
+    return this.#parseAsync(
+      EndpointSchema.response,
       this.fetcher(
-        "post",
-        this.#baseUrl + path,
-        this.parse(PostSchema.parameters, params[0])
+        method,
+        this.#baseUrl + finalPath,
+        this.#parse(EndpointSchema.parameters as TAny, parameters)
       )
     );
   }
@@ -75,16 +91,14 @@ export class RiseApiClient {
     path: Path,
     ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
   ): Promise<Static<TEndpoint>["response"]> {
-    const GetSchema = EndpointByMethod.get[path].properties;
+    return this.#request("get", path, ...params);
+  }
 
-    return this.parseAsync(
-      GetSchema.response,
-      this.fetcher(
-        "get",
-        this.#baseUrl + path,
-        this.parse(GetSchema.parameters, params[0])
-      )
-    );
+  post<Path extends keyof PostEndpoints, TEndpoint extends PostEndpoints[Path]>(
+    path: Path,
+    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
+  ): Promise<Static<TEndpoint>["response"]> {
+    return this.#request("post", path, ...params);
   }
 
   patch<
@@ -94,17 +108,9 @@ export class RiseApiClient {
     path: Path,
     ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
   ): Promise<Static<TEndpoint>["response"]> {
-    const PatchSchema = EndpointByMethod.patch[path].properties;
-
-    return this.parseAsync(
-      PatchSchema.response,
-      this.fetcher(
-        "patch",
-        this.#baseUrl + path,
-        this.parse(PatchSchema.parameters, params[0])
-      )
-    );
+    return this.#request("patch", path, ...params);
   }
+
   delete<
     Path extends keyof DeleteEndpoints,
     TEndpoint extends DeleteEndpoints[Path]
@@ -112,16 +118,7 @@ export class RiseApiClient {
     path: Path,
     ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
   ): Promise<Static<TEndpoint>["response"]> {
-    const PatchSchema = EndpointByMethod.delete[path].properties;
-
-    return this.parseAsync(
-      PatchSchema.response,
-      this.fetcher(
-        "delete",
-        this.#baseUrl + path,
-        this.parse(PatchSchema.parameters, params[0])
-      )
-    );
+    return this.#request("delete", path, ...params);
   }
 }
 

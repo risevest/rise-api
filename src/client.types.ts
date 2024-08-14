@@ -1,4 +1,12 @@
-import type { Endpoint, EndpointParameters, Method } from "./contract.ts";
+import type {
+  DeleteEndpoints,
+  Endpoint,
+  EndpointParameters,
+  GetEndpoints,
+  Method,
+  PatchEndpoints,
+  PostEndpoints,
+} from "./contract.ts";
 
 export type HttpMethod = "post" | "get" | "patch" | "delete";
 export type Fetcher = (
@@ -18,3 +26,10 @@ export type MaybeOptionalArg<T> = RequiredKeys<T> extends never
 export type MaybeOptionalOptions<T, O> = RequiredKeys<T> extends never
   ? [config?: T, options?: O]
   : [config: T, options?: O];
+
+export type EndpointMethodMap = {
+  delete: DeleteEndpoints;
+  get: GetEndpoints;
+  patch: PatchEndpoints;
+  post: PostEndpoints;
+};
