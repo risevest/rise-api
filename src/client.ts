@@ -192,22 +192,22 @@ export class RiseApiHooks {
     TError = unknown
   >(
     path: Path,
-    ...rest: MaybeOptionalOptions<
-      (
-        context: QueryFunctionContext<QueryKey>
-      ) => Static<TEndpoint>["parameters"],
-      Omit<UseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn">
+    configMapper: (
+      context: QueryFunctionContext<QueryKey>
+    ) => Static<TEndpoint>["parameters"],
+    options?: Omit<
+      UseInfiniteQueryOptions<TData, TError>,
+      "queryKey" | "queryFn"
     >
   ): UseInfiniteQueryResult<TData, Error> & {
     invalidate: () => Promise<void>;
     queryKey: QueryKey;
   } {
     const queryClient = useQueryClient();
-    const [argsMapper, options] = rest;
     const queryKey = this.getCacheKey("get", path, undefined as never);
     const queryFn = async (context: QueryFunctionContext<QueryKey>) => {
-      const resultingQueryArgs = argsMapper(context);
-      return this.#client.get(path, resultingQueryArgs as never);
+      const config = configMapper(context);
+      return this.#client.get(path, config as never);
     };
     const invalidate = () => queryClient.invalidateQueries(queryKey);
 

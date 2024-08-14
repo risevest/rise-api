@@ -16,5 +16,5 @@ export type MaybeOptionalArg<T> = RequiredKeys<T> extends never
   : [config: T];
 
 export type MaybeOptionalOptions<T, O> = RequiredKeys<T> extends never
-  ? [config?: T, queryOptions?: O]
-  : [config: T, queryOptions?: O];
+  ? [config?: T, options?: O]
+  : [config: T, options?: O];
