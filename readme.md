@@ -45,7 +45,7 @@ const apiClient = createRiseApiClient(async (method, url, params) => {
   return data
 } , 'api.com' false)
 
- api.get('/plans', {
+ apiClient.get('/plans', {
     query: {},
   })
 ```
