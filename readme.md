@@ -35,3 +35,27 @@ For example
 ```shell
 bunx rise-api generate ./swagger.yaml
 ```
+## Example
+```shell
+import { createRiseApiClient } from '@risemaxi/api-client'
+
+const apiClient = createRiseApiClient(async (method, url, params) => {
+  const data = await fetch(url)
+  const res = await data.json()
+  return data
+} , 'api.com' false)
+
+ api.get('/plans', {
+    query: {},
+  })
+```
+
+## Parameters
+
+| Name           | Type     | Default
+|----------------|----------|---------
+| `fetcher`      | Function |
+| `baseUrl`      | String  <sup>Optional</sup> | ""
+| `enableParsing`| Boolean <sup>Optional</sup> | true
+ 
+
