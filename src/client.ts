@@ -1,10 +1,18 @@
 import { Static, StaticDecode, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import {
+  MutationKey,
+  QueryFunctionContext,
+  QueryKey,
+  useInfiniteQuery,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   useMutation,
   UseMutationOptions,
   UseMutationResult,
+  useQueries,
   useQuery,
+  useQueryClient,
   UseQueryOptions,
   UseQueryResult,
 } from "react-query";
@@ -14,7 +22,7 @@ import type {
   HttpMethod,
   MaybeOptionalArg,
   MaybeOptionalOptions,
-} from "./client.types.ts";
+} from "./client.types.js";
 import {
   DeleteEndpoints,
   EndpointByMethod,
@@ -115,21 +123,6 @@ export class RiseApiClient {
       )
     );
   }
-
-  getRequestKey<
-    Method extends HttpMethod,
-    Endpoint extends EndpointByMethod[Method],
-    Path extends keyof Endpoint,
-    TEndpoint extends Endpoint[Path]
-  >(
-    method: Method,
-    path: Path,
-    //   @ts-expect-error cannot seem to index with parameters
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): readonly [string, ...unknown[]] {
-    const key = `${method}_${path as string}`;
-    return [key, ...params];
-  }
 }
 
 export function createRiseApiClient(
@@ -146,6 +139,21 @@ export class RiseApiHooks {
     this.#client = client;
   }
 
+  getCacheKey<
+    Method extends HttpMethod,
+    Endpoint extends EndpointByMethod[Method],
+    Path extends keyof Endpoint,
+    TEndpoint extends Endpoint[Path]
+  >(
+    method: Method,
+    path: Path,
+    //   @ts-expect-error cannot seem to index with parameters
+    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
+  ): readonly [string, ...unknown[]] {
+    const key = `${method}_${path as string}`;
+    return [key, ...params];
+  }
+
   public useGet<
     Path extends keyof GetEndpoints,
     TEndpoint extends GetEndpoints[Path],
@@ -157,14 +165,61 @@ export class RiseApiHooks {
       Static<TEndpoint>["parameters"],
       Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">
     >
-  ): UseQueryResult<TData, Error> {
+  ): UseQueryResult<TData, Error> & {
+    invalidate: () => Promise<void>;
+    queryKey: QueryKey;
+  } {
+    const queryClient = useQueryClient();
     const [config, options] = rest;
+    const queryKey = this.getCacheKey("get", path, config as never);
+    const invalidate = () => queryClient.invalidateQueries(queryKey);
 
-    return useQuery({
-      queryFn: () => this.#client.get(path, config as never),
-      queryKey: this.#client.getRequestKey("get", path, config as never),
-      ...(options as {}),
-    });
+    return {
+      ...useQuery({
+        queryFn: () => this.#client.get(path, config as never),
+        queryKey,
+        ...(options as {}),
+      }),
+      invalidate,
+      queryKey,
+    };
+  }
+
+  public useInfiniteGet<
+    Path extends keyof GetEndpoints,
+    TEndpoint extends GetEndpoints[Path],
+    TData extends Static<TEndpoint>["response"],
+    TError = unknown
+  >(
+    path: Path,
+    ...rest: MaybeOptionalOptions<
+      (
+        context: QueryFunctionContext<QueryKey>
+      ) => Static<TEndpoint>["parameters"],
+      Omit<UseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn">
+    >
+  ): UseInfiniteQueryResult<TData, Error> & {
+    invalidate: () => Promise<void>;
+    queryKey: QueryKey;
+  } {
+    const queryClient = useQueryClient();
+    const [argsMapper, options] = rest;
+    const queryKey = this.getCacheKey("get", path, undefined as never);
+    const queryFn = async (context: QueryFunctionContext<QueryKey>) => {
+      const resultingQueryArgs = argsMapper(context);
+      return this.#client.get(path, resultingQueryArgs as never);
+    };
+    const invalidate = () => queryClient.invalidateQueries(queryKey);
+
+    return {
+      ...useInfiniteQuery({
+        queryFn,
+        queryKey: queryKey,
+        ...(options as {}),
+      }),
+      invalidate,
+      queryKey,
+    } as never;
   }
 
   public usePost<
@@ -178,14 +233,20 @@ export class RiseApiHooks {
       Static<TEndpoint>["parameters"],
       Omit<UseMutationOptions<TData, TError>, "mutationKey" | "mutationFn">
     >
-  ): UseMutationResult<TData, Error> {
+  ): UseMutationResult<TData, Error> & {
+    mutationKey: MutationKey;
+  } {
     const [config, options] = rest;
+    const mutationKey = this.getCacheKey("post", path, config as never);
 
-    return useMutation({
-      mutationFn: () => this.#client.post(path, config as never),
-      mutationKey: this.#client.getRequestKey("post", path, config as never),
-      ...(options as {}),
-    }) as never;
+    return {
+      ...useMutation({
+        mutationFn: () => this.#client.post(path, config as never),
+        mutationKey,
+        ...(options as {}),
+      }),
+      mutationKey,
+    } as never;
   }
 
   public usePatch<
@@ -199,14 +260,20 @@ export class RiseApiHooks {
       Static<TEndpoint>["parameters"],
       Omit<UseMutationOptions<TData, TError>, "mutationKey" | "mutationFn">
     >
-  ): UseMutationResult<TData, Error> {
+  ): UseMutationResult<TData, Error> & {
+    mutationKey: MutationKey;
+  } {
     const [config, options] = rest;
+    const mutationKey = this.getCacheKey("patch", path, config as never);
 
-    return useMutation({
-      mutationFn: () => this.#client.patch(path, config as never),
-      mutationKey: this.#client.getRequestKey("patch", path, config as never),
-      ...(options as {}),
-    }) as never;
+    return {
+      ...useMutation({
+        mutationFn: () => this.#client.patch(path, config as never),
+        mutationKey,
+        ...(options as {}),
+      }),
+      mutationKey,
+    } as never;
   }
 
   public useDelete<
@@ -220,14 +287,20 @@ export class RiseApiHooks {
       Static<TEndpoint>["parameters"],
       Omit<UseMutationOptions<TData, TError>, "mutationKey" | "mutationFn">
     >
-  ): UseMutationResult<TData, Error> {
+  ): UseMutationResult<TData, Error> & {
+    mutationKey: MutationKey;
+  } {
     const [config, options] = rest;
+    const mutationKey = this.getCacheKey("delete", path, config as never);
 
-    return useMutation({
-      mutationFn: () => this.#client.delete(path, config as never),
-      mutationKey: this.#client.getRequestKey("delete", path, config as never),
-      ...(options as {}),
-    }) as never;
+    return {
+      ...useMutation({
+        mutationFn: () => this.#client.delete(path, config as never),
+        mutationKey,
+        ...(options as {}),
+      }),
+      mutationKey,
+    } as never;
   }
 }
 
