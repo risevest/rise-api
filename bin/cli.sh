@@ -1,6 +1,8 @@
 #!/bin/bash
 
-OUTPUT_FILE="node_modules/@risemaxi/api-client/src/contract.ts"
+SRC_DIR="node_modules/@risemaxi/api-client/src"
+DIST_DIR="node_modules/@risemaxi/api-client/dist"
+OUTPUT_FILE="$SRC_DIR/contract.ts"
 
 generate_file() {
   local INPUT_FILE="$1"
@@ -11,13 +13,18 @@ generate_file() {
   fi
   
   npx typed-openapi "$INPUT_FILE" -o "$OUTPUT_FILE" -r typebox
+
+  echo "Compiling TypeScript to JavaScript..."
+  npx tsc --project "$SRC_DIR/../tsconfig.json"
+
+  echo "File generated and compiled successfully."
 }
 
 display_help() {
   echo "Usage: rise-api [command] [options]"
   echo ""
   echo "Commands:"
-  echo "  generate [content]  Generate a file with the specified content"
+  echo "  generate [content]  Generate a file with the specified content and compile to JavaScript"
   echo "  help                Display this help message"
 }
 
