@@ -162,7 +162,7 @@ export class RiseApiHooks {
       Static<TEndpoint>["parameters"],
       Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">
     >
-  ): UseQueryResult<TData, Error> & {
+  ): UseQueryResult<TData, TError> & {
     invalidate: () => Promise<void>;
     queryKey: QueryKey;
   } {
@@ -196,12 +196,12 @@ export class RiseApiHooks {
       UseInfiniteQueryOptions<TData, TError>,
       "queryKey" | "queryFn"
     >
-  ): UseInfiniteQueryResult<TData, Error> & {
+  ): UseInfiniteQueryResult<TData, TError> & {
     invalidate: () => Promise<void>;
     queryKey: QueryKey;
   } {
     const queryClient = useQueryClient();
-    const queryKey = this.getCacheKey("get", path, undefined as never);
+    const queryKey = this.getCacheKey("get", path, {} as never);
     const queryFn = async (context: QueryFunctionContext<QueryKey>) => {
       const config = configMapper(context);
       return this.#client.get(path, config as never);
@@ -222,23 +222,24 @@ export class RiseApiHooks {
   public usePost<
     Path extends keyof PostEndpoints,
     TEndpoint extends PostEndpoints[Path],
+    TVariables extends Static<TEndpoint>["parameters"],
     TData extends Static<TEndpoint>["response"],
     TError = unknown
   >(
     path: Path,
-    ...rest: MaybeOptionalOptions<
-      Static<TEndpoint>["parameters"],
-      Omit<UseMutationOptions<TData, TError>, "mutationKey" | "mutationFn">
+    options?: Omit<
+      UseMutationOptions<TData, TError>,
+      "mutationKey" | "mutationFn"
     >
-  ): UseMutationResult<TData, Error> & {
+  ): UseMutationResult<TData, TError, TVariables> & {
     mutationKey: MutationKey;
   } {
-    const [config, options] = rest;
-    const mutationKey = this.getCacheKey("post", path, config as never);
+    const mutationKey = this.getCacheKey("post", path, {} as never);
 
     return {
       ...useMutation({
-        mutationFn: () => this.#client.post(path, config as never),
+        mutationFn: (params: Static<TEndpoint>["parameters"]) =>
+          this.#client.post(path, params as never),
         mutationKey,
         ...(options as {}),
       }),
@@ -249,23 +250,24 @@ export class RiseApiHooks {
   public usePatch<
     Path extends keyof PatchEndpoints,
     TEndpoint extends PatchEndpoints[Path],
+    TVariables extends Static<TEndpoint>["parameters"],
     TData extends Static<TEndpoint>["response"],
     TError = unknown
   >(
     path: Path,
-    ...rest: MaybeOptionalOptions<
-      Static<TEndpoint>["parameters"],
-      Omit<UseMutationOptions<TData, TError>, "mutationKey" | "mutationFn">
+    options?: Omit<
+      UseMutationOptions<TData, TError>,
+      "mutationKey" | "mutationFn"
     >
-  ): UseMutationResult<TData, Error> & {
+  ): UseMutationResult<TData, TError, TVariables> & {
     mutationKey: MutationKey;
   } {
-    const [config, options] = rest;
-    const mutationKey = this.getCacheKey("patch", path, config as never);
+    const mutationKey = this.getCacheKey("patch", path, {} as never);
 
     return {
       ...useMutation({
-        mutationFn: () => this.#client.patch(path, config as never),
+        mutationFn: (params: TVariables) =>
+          this.#client.patch(path, params as never),
         mutationKey,
         ...(options as {}),
       }),
@@ -276,23 +278,24 @@ export class RiseApiHooks {
   public useDelete<
     Path extends keyof DeleteEndpoints,
     TEndpoint extends DeleteEndpoints[Path],
+    TVariables extends Static<TEndpoint>["parameters"],
     TData extends Static<TEndpoint>["response"],
     TError = unknown
   >(
     path: Path,
-    ...rest: MaybeOptionalOptions<
-      Static<TEndpoint>["parameters"],
-      Omit<UseMutationOptions<TData, TError>, "mutationKey" | "mutationFn">
+    options?: Omit<
+      UseMutationOptions<TData, TError>,
+      "mutationKey" | "mutationFn"
     >
-  ): UseMutationResult<TData, Error> & {
+  ): UseMutationResult<TData, TError, TVariables> & {
     mutationKey: MutationKey;
   } {
-    const [config, options] = rest;
-    const mutationKey = this.getCacheKey("delete", path, config as never);
+    const mutationKey = this.getCacheKey("delete", path, {} as never);
 
     return {
       ...useMutation({
-        mutationFn: () => this.#client.delete(path, config as never),
+        mutationFn: (params: TVariables) =>
+          this.#client.delete(path, params as never),
         mutationKey,
         ...(options as {}),
       }),
