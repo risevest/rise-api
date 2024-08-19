@@ -1,7 +1,9 @@
 import { Static, StaticDecode, TAny, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import {
+  FetchQueryOptions,
   MutationKey,
+  QueryClient,
   QueryFunctionContext,
   QueryKey,
   useInfiniteQuery,
@@ -17,11 +19,11 @@ import {
 } from "react-query";
 
 import type {
+  EndpointMethodMap,
   Fetcher,
   HttpMethod,
   MaybeOptionalArg,
   MaybeOptionalOptions,
-  EndpointMethodMap,
 } from "./client.types.js";
 import {
   DeleteEndpoints,
@@ -151,16 +153,135 @@ export class RiseApiHooks {
     return [key, ...params];
   }
 
-  public useGet<
+  setCachedData<
+    Method extends HttpMethod,
+    Endpoint extends EndpointByMethod[Method],
+    Path extends keyof Endpoint,
+    TEndpoint extends Endpoint[Path]
+  >(
+    queryClient: QueryClient,
+    method: Method,
+    path: Path,
+    ...options: MaybeOptionalOptions<
+      // @ts-expect-error cannot seem to index with response
+      Static<TEndpoint>["response"],
+      // @ts-expect-error cannot seem to index with parameters
+      Static<TEndpoint>["parameters"]
+    >
+  ): void {
+    const [data, ...params] = options;
+    const queryKey = this.getCacheKey(
+      method,
+      path as any,
+      ...(params as never)
+    );
+
+    queryClient.setQueryData(queryKey, data);
+  }
+
+  useSetCachedData<
+    Method extends HttpMethod,
+    Endpoint extends EndpointByMethod[Method],
+    Path extends keyof Endpoint,
+    TEndpoint extends Endpoint[Path]
+  >(
+    method: Method,
+    path: Path,
+    ...options: MaybeOptionalOptions<
+      // @ts-expect-error cannot seem to index with response
+      Static<TEndpoint>["response"],
+      // @ts-expect-error cannot seem to index with parameters
+      Static<TEndpoint>["parameters"]
+    >
+  ): void {
+    const queryClient = useQueryClient();
+
+    this.setCachedData(queryClient, method, path as any, ...options);
+  }
+
+  getCachedData<
+    Method extends HttpMethod,
+    Endpoint extends EndpointByMethod[Method],
+    Path extends keyof Endpoint,
+    TEndpoint extends Endpoint[Path]
+  >(
+    queryClient: QueryClient,
+    method: Method,
+    path: Path,
+    //   @ts-expect-error cannot seem to index with parameters
+    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
+  ): //   @ts-expect-error cannot seem to index with response
+  Static<TEndpoint>["response"] | undefined {
+    const queryKey = this.getCacheKey(method, path as any, ...params);
+
+    return queryClient.getQueryData(queryKey);
+  }
+
+  useGetCachedData<
+    Method extends HttpMethod,
+    Endpoint extends EndpointByMethod[Method],
+    Path extends keyof Endpoint,
+    TEndpoint extends Endpoint[Path]
+  >(
+    method: Method,
+    path: Path,
+    //   @ts-expect-error cannot seem to index with parameters
+    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
+  ): //   @ts-expect-error cannot seem to index with parameters
+  Static<TEndpoint>["response"] | undefined {
+    const queryClient = useQueryClient();
+
+    return this.getCachedData(queryClient, method, path as any, ...params);
+  }
+
+  prefetchData<
     Path extends keyof GetEndpoints,
-    TEndpoint extends GetEndpoints[Path],
-    TData extends Static<TEndpoint>["response"],
-    TError = unknown
+    TEndpoint extends GetEndpoints[Path]
+  >(
+    queryClient: QueryClient,
+    path: Path,
+    ...rest: MaybeOptionalOptions<
+      Static<TEndpoint>["parameters"],
+      FetchQueryOptions
+    >
+  ) {
+    const [config, options] = rest;
+    const queryKey = this.getCacheKey("get", path, config as never);
+    const queryFn = () => this.#client.get(path, config as never);
+
+    queryClient.prefetchQuery({
+      ...options,
+      queryKey,
+      queryFn,
+    });
+  }
+
+  usePrefetchData<
+    Path extends keyof GetEndpoints,
+    TEndpoint extends GetEndpoints[Path]
   >(
     path: Path,
     ...rest: MaybeOptionalOptions<
       Static<TEndpoint>["parameters"],
-      Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">
+      FetchQueryOptions
+    >
+  ) {
+    const queryClient = useQueryClient();
+
+    this.prefetchData(queryClient, path, ...rest);
+  }
+
+  useGet<
+    Path extends keyof GetEndpoints,
+    TEndpoint extends GetEndpoints[Path],
+    TQueryFnData extends Static<TEndpoint>["response"],
+    TError = unknown,
+    TData = TQueryFnData
+  >(
+    path: Path,
+    ...rest: MaybeOptionalOptions<
+      Static<TEndpoint>["parameters"],
+      Omit<UseQueryOptions<TQueryFnData, TError, TData>, "queryKey" | "queryFn">
     >
   ): UseQueryResult<TData, TError> & {
     invalidate: () => Promise<void>;
@@ -182,7 +303,7 @@ export class RiseApiHooks {
     };
   }
 
-  public useInfiniteGet<
+  useInfiniteGet<
     Path extends keyof GetEndpoints,
     TEndpoint extends GetEndpoints[Path],
     TData extends Static<TEndpoint>["response"],
@@ -219,7 +340,7 @@ export class RiseApiHooks {
     } as never;
   }
 
-  public usePost<
+  usePost<
     Path extends keyof PostEndpoints,
     TEndpoint extends PostEndpoints[Path],
     TVariables extends Static<TEndpoint>["parameters"],
@@ -247,7 +368,7 @@ export class RiseApiHooks {
     } as never;
   }
 
-  public usePatch<
+  usePatch<
     Path extends keyof PatchEndpoints,
     TEndpoint extends PatchEndpoints[Path],
     TVariables extends Static<TEndpoint>["parameters"],
@@ -275,7 +396,7 @@ export class RiseApiHooks {
     } as never;
   }
 
-  public useDelete<
+  useDelete<
     Path extends keyof DeleteEndpoints,
     TEndpoint extends DeleteEndpoints[Path],
     TVariables extends Static<TEndpoint>["parameters"],
