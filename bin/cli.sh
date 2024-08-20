@@ -12,11 +12,13 @@ generate_file() {
     exit 1
   fi
   
+  mkdir -p "$SRC_DIR"
   npx typed-openapi "$INPUT_FILE" -o "$OUTPUT_FILE" -r typebox
 
   echo "Compiling TypeScript to JavaScript..."
   npx tsc --project "$SRC_DIR/../tsconfig.build.json"
 
+  rm -rf "$SRC_DIR"
   echo "File generated and compiled successfully."
 }
 
