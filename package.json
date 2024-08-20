@@ -1,6 +1,6 @@
 {
   "name": "@risemaxi/api-client",
-  "version": "0.0.10",
+  "version": "0.0.12",
   "description": "Client Library for Rise",
   "type": "module",
   "main": "dist/index.js",
@@ -9,7 +9,8 @@
   "files": [
     "dist",
     "src",
-    "bin"
+    "bin",
+    "tsconfig.build.json"
   ],
   "keywords": [
     "api",

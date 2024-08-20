@@ -15,7 +15,7 @@ generate_file() {
   npx typed-openapi "$INPUT_FILE" -o "$OUTPUT_FILE" -r typebox
 
   echo "Compiling TypeScript to JavaScript..."
-  npx tsc --project "$SRC_DIR/../tsconfig.json"
+  npx tsc --project "$SRC_DIR/../tsconfig.build.json"
 
   echo "File generated and compiled successfully."
 }
