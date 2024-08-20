@@ -322,8 +322,12 @@ export class RiseApiHooks {
     queryKey: QueryKey;
   } {
     const queryClient = useQueryClient();
-    const queryKey = this.getCacheKey("get", path, {} as never);
-    const queryFn = async (context: QueryFunctionContext<QueryKey>) => {
+    const queryKey = this.getCacheKey(
+      "get",
+      path,
+      configMapper({ meta: {}, queryKey: [] })
+    );
+    const queryFn = (context: QueryFunctionContext<QueryKey>) => {
       const config = configMapper(context);
       return this.#client.get(path, config as never);
     };
@@ -332,7 +336,7 @@ export class RiseApiHooks {
     return {
       ...useInfiniteQuery({
         queryFn,
-        queryKey: queryKey,
+        queryKey,
         ...(options as {}),
       }),
       invalidate,
