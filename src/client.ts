@@ -37,12 +37,15 @@ export class RiseApiClient {
   #baseUrl: string = "";
   #enabledParsing: boolean = true;
 
-  constructor(public fetcher: Fetcher, enableParsing = true) {
-    this.#enabledParsing = enableParsing;
-  }
+  constructor(public fetcher: Fetcher) {}
 
   setBaseUrl(baseUrl: string) {
     this.#baseUrl = baseUrl;
+    return this;
+  }
+
+  setEnableParsing(enable: boolean) {
+    this.#enabledParsing = enable;
     return this;
   }
 
@@ -124,12 +127,8 @@ export class RiseApiClient {
   }
 }
 
-export function createRiseApiClient(
-  fetcher: Fetcher,
-  baseUrl?: string,
-  enableParsing?: boolean
-) {
-  return new RiseApiClient(fetcher, enableParsing).setBaseUrl(baseUrl ?? "");
+export function createRiseApiClient(fetcher: Fetcher) {
+  return new RiseApiClient(fetcher);
 }
 
 export class RiseApiHooks {
