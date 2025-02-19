@@ -16,7 +16,7 @@ import {
   useQueryClient,
   UseQueryOptions,
   UseQueryResult,
-} from "react-query";
+} from "@tanstack/react-query";
 
 import type {
   EndpointMethodMap,
@@ -289,7 +289,11 @@ export class RiseApiHooks {
     const queryClient = useQueryClient();
     const [config, options] = rest;
     const queryKey = this.getCacheKey("get", path, config as never);
-    const invalidate = () => queryClient.invalidateQueries(queryKey);
+    const invalidate = () =>
+      queryClient.invalidateQueries({
+        exact: true,
+        queryKey,
+      });
 
     return {
       ...useQuery({
@@ -312,7 +316,7 @@ export class RiseApiHooks {
     configMapper: (
       context: QueryFunctionContext<QueryKey>
     ) => Static<TEndpoint>["parameters"],
-    options?: Omit<
+    options: Omit<
       UseInfiniteQueryOptions<TData, TError>,
       "queryKey" | "queryFn"
     >
@@ -324,19 +328,22 @@ export class RiseApiHooks {
     const queryKey = this.getCacheKey(
       "get",
       path,
-      configMapper({ meta: {}, queryKey: [] })
+      configMapper({ meta: {}, queryKey: [], signal: new AbortSignal() })
     );
     const queryFn = (context: QueryFunctionContext<QueryKey>) => {
       const config = configMapper(context);
       return this.#client.get(path, config as never);
     };
-    const invalidate = () => queryClient.invalidateQueries(queryKey);
+    const invalidate = () =>
+      queryClient.invalidateQueries({
+        queryKey,
+      });
 
     return {
       ...useInfiniteQuery({
         queryFn,
         queryKey,
-        ...(options as {}),
+        ...(options as any),
       }),
       invalidate,
       queryKey,
