@@ -21,11 +21,6 @@ program
     try {
       fs.mkdirSync(SRC_DIR, { recursive: true });
 
-      if (!fs.existsSync(swaggerFile)) {
-        console.error(`Error: Swagger file '${swaggerFile}' not found.`);
-        process.exit(1);
-      }
-
       execSync(
         `npx typed-openapi "${swaggerFile}" -o "${OUTPUT_FILE}" -r typebox`,
         { stdio: "inherit" }

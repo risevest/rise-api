@@ -1,6 +1,6 @@
 {
   "name": "@risemaxi/api-client",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Client Library for Rise",
   "type": "module",
   "main": "dist/index.js",
@@ -21,12 +21,12 @@
     "url": "https://github.com/Balogunofafrica"
   },
   "bin": {
-    "rise-api": "./bin/cli.js"
+    "rise-api": "./bin/cli.cjs"
   },
   "scripts": {
     "prepare": "npm run build",
     "build": "tsc",
-    "cli": "./bin/cli.sh"
+    "cli": "./bin/cli.cjs"
   },
   "peerDependencies": {
     "@sinclair/typebox": ">=0.33.4",
