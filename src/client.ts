@@ -359,7 +359,7 @@ export class RiseApiHooks {
   >(
     path: Path,
     options?: Omit<
-      UseMutationOptions<TData, TError>,
+      UseMutationOptions<TData, TError, TVariables>,
       "mutationKey" | "mutationFn"
     >
   ): UseMutationResult<TData, TError, TVariables> & {
@@ -387,7 +387,7 @@ export class RiseApiHooks {
   >(
     path: Path,
     options?: Omit<
-      UseMutationOptions<TData, TError>,
+      UseMutationOptions<TData, TError, TVariables>,
       "mutationKey" | "mutationFn"
     >
   ): UseMutationResult<TData, TError, TVariables> & {
@@ -415,7 +415,7 @@ export class RiseApiHooks {
   >(
     path: Path,
     options?: Omit<
-      UseMutationOptions<TData, TError>,
+      UseMutationOptions<TData, TError, TVariables>,
       "mutationKey" | "mutationFn"
     >
   ): UseMutationResult<TData, TError, TVariables> & {
