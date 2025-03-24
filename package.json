@@ -1,6 +1,6 @@
 {
   "name": "@risemaxi/api-client",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Client Library for Rise",
   "type": "module",
   "main": "dist/index.js",

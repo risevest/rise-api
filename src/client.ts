@@ -2,6 +2,7 @@ import { Static, StaticDecode, TAny, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import {
   FetchQueryOptions,
+  InfiniteData,
   MutationKey,
   QueryClient,
   QueryFunctionContext,
@@ -317,10 +318,10 @@ export class RiseApiHooks {
       context: QueryFunctionContext<QueryKey>
     ) => Static<TEndpoint>["parameters"],
     options: Omit<
-      UseInfiniteQueryOptions<TData, TError>,
+      UseInfiniteQueryOptions<InfiniteData<TData>, TError>,
       "queryKey" | "queryFn"
     >
-  ): UseInfiniteQueryResult<TData, TError> & {
+  ): UseInfiniteQueryResult<InfiniteData<TData>, TError> & {
     invalidate: () => Promise<void>;
     queryKey: QueryKey;
   } {
