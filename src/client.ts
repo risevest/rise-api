@@ -318,7 +318,7 @@ export class RiseApiHooks {
       context: QueryFunctionContext<QueryKey>
     ) => Static<TEndpoint>["parameters"],
     options: Omit<
-      UseInfiniteQueryOptions<InfiniteData<TData>, TError>,
+      UseInfiniteQueryOptions<TData, TError>,
       "queryKey" | "queryFn"
     >
   ): UseInfiniteQueryResult<InfiniteData<TData>, TError> & {
