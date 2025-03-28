@@ -329,7 +329,11 @@ export class RiseApiHooks {
     const queryKey = this.getCacheKey(
       "get",
       path,
-      configMapper({ meta: {}, queryKey: [], signal: new AbortSignal() })
+      configMapper({
+        meta: {},
+        queryKey: [],
+        signal: new AbortController().signal,
+      })
     );
     const queryFn = (context: QueryFunctionContext<QueryKey>) => {
       const config = configMapper(context);
