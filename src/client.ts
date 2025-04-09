@@ -32,6 +32,7 @@ import {
   GetEndpoints,
   PatchEndpoints,
   PostEndpoints,
+  PutEndpoints,
 } from "./contract.js";
 
 export class RiseApiClient {
@@ -125,6 +126,13 @@ export class RiseApiClient {
     ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
   ): Promise<Static<TEndpoint>["response"]> {
     return this.#request("delete", path, ...params);
+  }
+
+  put<Path extends keyof PutEndpoints, TEndpoint extends PutEndpoints[Path]>(
+    path: Path,
+    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
+  ): Promise<Static<TEndpoint>["response"]> {
+    return this.#request("put", path, ...params);
   }
 }
 
@@ -432,6 +440,34 @@ export class RiseApiHooks {
       ...useMutation({
         mutationFn: (params: TVariables) =>
           this.#client.delete(path, params as never),
+        mutationKey,
+        ...(options as {}),
+      }),
+      mutationKey,
+    } as never;
+  }
+
+  usePut<
+    Path extends keyof PutEndpoints,
+    TEndpoint extends PutEndpoints[Path],
+    TVariables extends Static<TEndpoint>["parameters"],
+    TData extends Static<TEndpoint>["response"],
+    TError = unknown
+  >(
+    path: Path,
+    options?: Omit<
+      UseMutationOptions<TData, TError, TVariables>,
+      "mutationKey" | "mutationFn"
+    >
+  ): UseMutationResult<TData, TError, TVariables> & {
+    mutationKey: MutationKey;
+  } {
+    const mutationKey = this.getCacheKey("put", path, {} as never);
+
+    return {
+      ...useMutation({
+        mutationFn: (params: TVariables) =>
+          this.#client.put(path, params as never),
         mutationKey,
         ...(options as {}),
       }),

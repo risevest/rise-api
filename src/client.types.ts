@@ -6,9 +6,10 @@ import type {
   Method,
   PatchEndpoints,
   PostEndpoints,
+  PutEndpoints,
 } from "./contract.ts";
 
-export type HttpMethod = "post" | "get" | "patch" | "delete";
+export type HttpMethod = "post" | "get" | "patch" | "delete" | "put";
 export type Fetcher = (
   method: Method,
   url: string,
@@ -32,4 +33,5 @@ export type EndpointMethodMap = {
   get: GetEndpoints;
   patch: PatchEndpoints;
   post: PostEndpoints;
+  put: PutEndpoints;
 };
