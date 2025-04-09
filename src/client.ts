@@ -341,6 +341,7 @@ export class RiseApiHooks {
         meta: {},
         queryKey: [],
         signal: new AbortController().signal,
+        client: queryClient,
       })
     );
     const queryFn = (context: QueryFunctionContext<QueryKey>) => {
