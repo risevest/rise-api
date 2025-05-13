@@ -22,7 +22,7 @@ program
       fs.mkdirSync(SRC_DIR, { recursive: true });
 
       execSync(
-        `npx typed-openapi "${swaggerFile}" -o "${OUTPUT_FILE}" -r typebox`,
+        `npx typed-openapi@0.8.0 "${swaggerFile}" -o "${OUTPUT_FILE}" -r typebox`,
         { stdio: "inherit" }
       );
 
