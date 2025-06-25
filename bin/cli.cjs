@@ -6,7 +6,10 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { execSync } = require("node:child_process");
 
-program.name("rise-api").description("API client generation CLI tool").version(version);
+program
+  .name("rise-api")
+  .description("API client generation CLI tool")
+  .version(version);
 
 program
   .command("generate <swaggerFile>")
@@ -18,12 +21,22 @@ program
     try {
       fs.mkdirSync(SRC_DIR, { recursive: true });
 
-      execSync(`npx typed-openapi@1.5.0 "${swaggerFile}" -o "${OUTPUT_FILE}" -r typebox`, { stdio: "inherit" });
+      execSync(
+        `npx typed-openapi@1.5.0 "${swaggerFile}" -o "${OUTPUT_FILE}" -r typebox`,
+        { stdio: "inherit" }
+      );
 
       console.log("Compiling TypeScript to JavaScript...");
-      execSync(`npx tsc --noCheck --project "${path.join(SRC_DIR, "..", "tsconfig.build.json")}"`, {
-        stdio: "inherit",
-      });
+      execSync(
+        `npx tsc --noCheck --project "${path.join(
+          SRC_DIR,
+          "..",
+          "tsconfig.build.json"
+        )}"`,
+        {
+          stdio: "inherit",
+        }
+      );
 
       fs.rmSync(SRC_DIR, { recursive: true, force: true });
 
