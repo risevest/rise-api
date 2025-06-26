@@ -8,7 +8,7 @@
         "@tanstack/react-query": "^5.8.4",
         "commander": "^13.1.0",
         "typed-openapi": "^0.8.0",
-        "typescript": "^5.5.3",
+        "typescript": "^5.8.3",
       },
       "peerDependencies": {
         "@sinclair/typebox": ">=0.33.4",

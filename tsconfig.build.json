@@ -2,8 +2,8 @@
   "compilerOptions": {
     "strict": true,
     "outDir": "./dist",
-    "allowJs": true,
-    "checkJs": true,
+    "moduleDetection": "force",
+    "allowJs": false,
     "module": "NodeNext",
     "target": "esnext",
     "moduleResolution": "NodeNext",
@@ -14,5 +14,7 @@
     "declaration": true,
     "declarationMap": true
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }
