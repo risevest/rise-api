@@ -19,13 +19,7 @@ import {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type {
-  EndpointMethodMap,
-  Fetcher,
-  HttpMethod,
-  MaybeOptionalArg,
-  MaybeOptionalOptions,
-} from "./client.types.js";
+import type { EndpointMethodMap, Fetcher, HttpMethod, MaybeOptionalArg, MaybeOptionalOptions } from "./client.types.js";
 import {
   DeleteEndpoints,
   EndpointByMethod,
@@ -304,22 +298,21 @@ export class RiseApiHooks {
         queryKey,
       });
 
-    return {
-      ...useQuery({
+    return Object.assign(
+      useQuery({
         queryFn: () => this.#client.get(path, config as never),
         queryKey,
         ...(options as {}),
       }),
-      invalidate,
-      queryKey,
-    };
+      { invalidate, queryKey }
+    ) as never;
   }
 
   useInfiniteGet<
     Path extends keyof GetEndpoints,
     TEndpoint extends GetEndpoints[Path],
     TData extends Static<TEndpoint>["response"],
-    TError = unknown
+    TError = Error
   >(
     path: Path,
     configMapper: (
@@ -353,15 +346,14 @@ export class RiseApiHooks {
         queryKey,
       });
 
-    return {
-      ...useInfiniteQuery({
+    return Object.assign(
+      useInfiniteQuery<TData, TError>({
         queryFn,
         queryKey,
         ...(options as any),
       }),
-      invalidate,
-      queryKey,
-    } as never;
+      { invalidate, queryKey }
+    );
   }
 
   usePost<
@@ -381,15 +373,15 @@ export class RiseApiHooks {
   } {
     const mutationKey = this.getCacheKey("post", path, {} as never);
 
-    return {
-      ...useMutation({
+    return Object.assign(
+      useMutation({
         mutationFn: (params: Static<TEndpoint>["parameters"]) =>
           this.#client.post(path, params as never),
         mutationKey,
         ...(options as {}),
       }),
-      mutationKey,
-    } as never;
+      { mutationKey }
+    ) as never;
   }
 
   usePatch<
@@ -409,15 +401,15 @@ export class RiseApiHooks {
   } {
     const mutationKey = this.getCacheKey("patch", path, {} as never);
 
-    return {
-      ...useMutation({
+    return Object.assign(
+      useMutation({
         mutationFn: (params: TVariables) =>
           this.#client.patch(path, params as never),
         mutationKey,
         ...(options as {}),
       }),
-      mutationKey,
-    } as never;
+      { mutationKey }
+    ) as never;
   }
 
   useDelete<
@@ -437,15 +429,15 @@ export class RiseApiHooks {
   } {
     const mutationKey = this.getCacheKey("delete", path, {} as never);
 
-    return {
-      ...useMutation({
+    return Object.assign(
+      useMutation({
         mutationFn: (params: TVariables) =>
           this.#client.delete(path, params as never),
         mutationKey,
         ...(options as {}),
       }),
-      mutationKey,
-    } as never;
+      { mutationKey }
+    ) as never;
   }
 
   usePut<
@@ -465,15 +457,15 @@ export class RiseApiHooks {
   } {
     const mutationKey = this.getCacheKey("put", path, {} as never);
 
-    return {
-      ...useMutation({
+    return Object.assign(
+      useMutation({
         mutationFn: (params: TVariables) =>
           this.#client.put(path, params as never),
         mutationKey,
         ...(options as {}),
       }),
-      mutationKey,
-    } as never;
+      { mutationKey }
+    ) as never;
   }
 }
 
