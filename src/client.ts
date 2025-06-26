@@ -49,7 +49,10 @@ export class RiseApiClient {
     return this.#enabledParsing ? Value.Parse(schema, value) : value;
   }
 
-  #parseAsync<T extends TSchema>(schema: T, value: Promise<unknown>): Promise<StaticDecode<T, []>> {
+  #parseAsync<T extends TSchema>(
+    schema: T,
+    value: Promise<unknown>
+  ): Promise<StaticDecode<T, []>> {
     return value.then((res) => this.#parse(schema, res));
   }
 
@@ -77,7 +80,11 @@ export class RiseApiClient {
 
     return this.#parseAsync(
       EndpointSchema.response,
-      this.fetcher(method, this.#baseUrl + finalPath, this.#parse(EndpointSchema.parameters as TAny, parameters))
+      this.fetcher(
+        method,
+        this.#baseUrl + finalPath,
+        this.#parse(EndpointSchema.parameters as TAny, parameters)
+      )
     );
   }
 
@@ -95,14 +102,20 @@ export class RiseApiClient {
     return this.#request("post", path, ...params);
   }
 
-  patch<Path extends keyof PatchEndpoints, TEndpoint extends PatchEndpoints[Path]>(
+  patch<
+    Path extends keyof PatchEndpoints,
+    TEndpoint extends PatchEndpoints[Path]
+  >(
     path: Path,
     ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
   ): Promise<Static<TEndpoint>["response"]> {
     return this.#request("patch", path, ...params);
   }
 
-  delete<Path extends keyof DeleteEndpoints, TEndpoint extends DeleteEndpoints[Path]>(
+  delete<
+    Path extends keyof DeleteEndpoints,
+    TEndpoint extends DeleteEndpoints[Path]
+  >(
     path: Path,
     ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
   ): Promise<Static<TEndpoint>["response"]> {
@@ -159,7 +172,11 @@ export class RiseApiHooks {
     >
   ): void {
     const [data, ...params] = options;
-    const queryKey = this.getCacheKey(method, path as any, ...(params as never));
+    const queryKey = this.getCacheKey(
+      method,
+      path as any,
+      ...(params as never)
+    );
 
     queryClient.setQueryData(queryKey, data);
   }
@@ -219,10 +236,16 @@ export class RiseApiHooks {
     return this.getCachedData(queryClient, method, path as any, ...params);
   }
 
-  prefetchData<Path extends keyof GetEndpoints, TEndpoint extends GetEndpoints[Path]>(
+  prefetchData<
+    Path extends keyof GetEndpoints,
+    TEndpoint extends GetEndpoints[Path]
+  >(
     queryClient: QueryClient,
     path: Path,
-    ...rest: MaybeOptionalOptions<Static<TEndpoint>["parameters"], FetchQueryOptions>
+    ...rest: MaybeOptionalOptions<
+      Static<TEndpoint>["parameters"],
+      FetchQueryOptions
+    >
   ) {
     const [config, options] = rest;
     const queryKey = this.getCacheKey("get", path, config as never);
@@ -235,9 +258,15 @@ export class RiseApiHooks {
     });
   }
 
-  usePrefetchData<Path extends keyof GetEndpoints, TEndpoint extends GetEndpoints[Path]>(
+  usePrefetchData<
+    Path extends keyof GetEndpoints,
+    TEndpoint extends GetEndpoints[Path]
+  >(
     path: Path,
-    ...rest: MaybeOptionalOptions<Static<TEndpoint>["parameters"], FetchQueryOptions>
+    ...rest: MaybeOptionalOptions<
+      Static<TEndpoint>["parameters"],
+      FetchQueryOptions
+    >
   ) {
     const queryClient = useQueryClient();
 
@@ -286,8 +315,13 @@ export class RiseApiHooks {
     TError = Error
   >(
     path: Path,
-    configMapper: (context: QueryFunctionContext<QueryKey>) => Static<TEndpoint>["parameters"],
-    options: Omit<UseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn">
+    configMapper: (
+      context: QueryFunctionContext<QueryKey>
+    ) => Static<TEndpoint>["parameters"],
+    options: Omit<
+      UseInfiniteQueryOptions<TData, TError>,
+      "queryKey" | "queryFn"
+    >
   ): UseInfiniteQueryResult<InfiniteData<TData>, TError> & {
     invalidate: () => Promise<void>;
     queryKey: QueryKey;
@@ -330,7 +364,10 @@ export class RiseApiHooks {
     TError = unknown
   >(
     path: Path,
-    options?: Omit<UseMutationOptions<TData, TError, TVariables>, "mutationKey" | "mutationFn">
+    options?: Omit<
+      UseMutationOptions<TData, TError, TVariables>,
+      "mutationKey" | "mutationFn"
+    >
   ): UseMutationResult<TData, TError, TVariables> & {
     mutationKey: MutationKey;
   } {
@@ -338,7 +375,8 @@ export class RiseApiHooks {
 
     return Object.assign(
       useMutation({
-        mutationFn: (params: Static<TEndpoint>["parameters"]) => this.#client.post(path, params as never),
+        mutationFn: (params: Static<TEndpoint>["parameters"]) =>
+          this.#client.post(path, params as never),
         mutationKey,
         ...(options as {}),
       }),
@@ -354,7 +392,10 @@ export class RiseApiHooks {
     TError = unknown
   >(
     path: Path,
-    options?: Omit<UseMutationOptions<TData, TError, TVariables>, "mutationKey" | "mutationFn">
+    options?: Omit<
+      UseMutationOptions<TData, TError, TVariables>,
+      "mutationKey" | "mutationFn"
+    >
   ): UseMutationResult<TData, TError, TVariables> & {
     mutationKey: MutationKey;
   } {
@@ -362,7 +403,8 @@ export class RiseApiHooks {
 
     return Object.assign(
       useMutation({
-        mutationFn: (params: TVariables) => this.#client.patch(path, params as never),
+        mutationFn: (params: TVariables) =>
+          this.#client.patch(path, params as never),
         mutationKey,
         ...(options as {}),
       }),
@@ -378,7 +420,10 @@ export class RiseApiHooks {
     TError = unknown
   >(
     path: Path,
-    options?: Omit<UseMutationOptions<TData, TError, TVariables>, "mutationKey" | "mutationFn">
+    options?: Omit<
+      UseMutationOptions<TData, TError, TVariables>,
+      "mutationKey" | "mutationFn"
+    >
   ): UseMutationResult<TData, TError, TVariables> & {
     mutationKey: MutationKey;
   } {
@@ -386,7 +431,8 @@ export class RiseApiHooks {
 
     return Object.assign(
       useMutation({
-        mutationFn: (params: TVariables) => this.#client.delete(path, params as never),
+        mutationFn: (params: TVariables) =>
+          this.#client.delete(path, params as never),
         mutationKey,
         ...(options as {}),
       }),
@@ -402,7 +448,10 @@ export class RiseApiHooks {
     TError = unknown
   >(
     path: Path,
-    options?: Omit<UseMutationOptions<TData, TError, TVariables>, "mutationKey" | "mutationFn">
+    options?: Omit<
+      UseMutationOptions<TData, TError, TVariables>,
+      "mutationKey" | "mutationFn"
+    >
   ): UseMutationResult<TData, TError, TVariables> & {
     mutationKey: MutationKey;
   } {
@@ -410,7 +459,8 @@ export class RiseApiHooks {
 
     return Object.assign(
       useMutation({
-        mutationFn: (params: TVariables) => this.#client.put(path, params as never),
+        mutationFn: (params: TVariables) =>
+          this.#client.put(path, params as never),
         mutationKey,
         ...(options as {}),
       }),
