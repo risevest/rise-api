@@ -36,7 +36,7 @@ For example
 bunx rise-api generate ./swagger.yaml
 ```
 ## Example
-```shell
+```ts
 import { createRiseApiClient, createRiseApiHooks } from '@risemaxi/api-client'
 
 const apiClient = createRiseApiClient(async (method, url, params) => {
