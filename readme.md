@@ -37,7 +37,7 @@ bunx rise-api generate ./swagger.yaml
 ```
 ## Example
 ```shell
-import { createRiseApiClient } from '@risemaxi/api-client'
+import { createRiseApiClient, createRiseApiHooks } from '@risemaxi/api-client'
 
 const apiClient = createRiseApiClient(async (method, url, params) => {
   const data = await fetch(url)
@@ -45,9 +45,21 @@ const apiClient = createRiseApiClient(async (method, url, params) => {
   return data
 } , 'api.com' false)
 
- apiClient.get('/plans', {
+const apiHooks = createRiseApiHooks(riseApi);
+...
+
+// Then later use the client like so:
+apiClient.get('/plans', {
     query: {},
-  })
+})
+apiClient.post('/plans', {
+    body: { id: "some-uuid" },
+})
+
+// Or use the hooks like so:
+const { data } = apiHooks.useGet('/plans', {
+    query: {},
+})
 ```
 
 ## Parameters
