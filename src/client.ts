@@ -20,9 +20,8 @@ import {
 } from "@tanstack/react-query";
 
 import type { EndpointMethodMap, Fetcher, HttpMethod, MaybeOptionalArg, MaybeOptionalOptions } from "./client.types.js";
-import {
+import type {
   DeleteEndpoints,
-  EndpointByMethod,
   GetEndpoints,
   PatchEndpoints,
   PostEndpoints,
@@ -69,21 +68,43 @@ export class RiseApiClient {
     });
   }
 
-  #request<M extends HttpMethod, P extends keyof EndpointMethodMap[M]>(
+  async #request<M extends HttpMethod, P extends keyof EndpointMethodMap[M]>(
     method: M,
     path: P,
     ...params: any[]
   ): Promise<any> {
     const parameters = params[0];
     const finalPath = this.#constructPath(path as string, parameters?.path);
-    const EndpointSchema = (EndpointByMethod[method][path] as TAny).properties;
+
+    if (!this.#enabledParsing) {
+      return this.fetcher(method, this.#baseUrl + finalPath, parameters);
+    }
+
+    const { getEndpointSchema } = await import("./contract.js");
+    const endpointSchema = getEndpointSchema(method, path as string) as
+      | TAny
+      | undefined;
+
+    if (!endpointSchema?.properties) {
+      throw new Error(
+        `Unknown endpoint schema for ${method.toUpperCase()} ${String(path)}`
+      );
+    }
+
+    const endpointProperties = endpointSchema.properties as {
+      parameters?: TAny;
+      response: TAny;
+    };
+    const parsedParameters = endpointProperties.parameters
+      ? this.#parse(endpointProperties.parameters, parameters)
+      : parameters;
 
     return this.#parseAsync(
-      EndpointSchema.response,
+      endpointProperties.response,
       this.fetcher(
         method,
         this.#baseUrl + finalPath,
-        this.#parse(EndpointSchema.parameters as TAny, parameters)
+        parsedParameters
       )
     );
   }
@@ -142,9 +163,8 @@ export class RiseApiHooks {
 
   getCacheKey<
     Method extends HttpMethod,
-    Endpoint extends EndpointByMethod[Method],
-    Path extends keyof Endpoint,
-    TEndpoint extends Endpoint[Path]
+    Path extends keyof EndpointMethodMap[Method],
+    TEndpoint extends EndpointMethodMap[Method][Path]
   >(
     method: Method,
     path: Path,
@@ -157,9 +177,8 @@ export class RiseApiHooks {
 
   setCachedData<
     Method extends HttpMethod,
-    Endpoint extends EndpointByMethod[Method],
-    Path extends keyof Endpoint,
-    TEndpoint extends Endpoint[Path]
+    Path extends keyof EndpointMethodMap[Method],
+    TEndpoint extends EndpointMethodMap[Method][Path]
   >(
     queryClient: QueryClient,
     method: Method,
@@ -183,9 +202,8 @@ export class RiseApiHooks {
 
   useSetCachedData<
     Method extends HttpMethod,
-    Endpoint extends EndpointByMethod[Method],
-    Path extends keyof Endpoint,
-    TEndpoint extends Endpoint[Path]
+    Path extends keyof EndpointMethodMap[Method],
+    TEndpoint extends EndpointMethodMap[Method][Path]
   >(
     method: Method,
     path: Path,
@@ -203,9 +221,8 @@ export class RiseApiHooks {
 
   getCachedData<
     Method extends HttpMethod,
-    Endpoint extends EndpointByMethod[Method],
-    Path extends keyof Endpoint,
-    TEndpoint extends Endpoint[Path]
+    Path extends keyof EndpointMethodMap[Method],
+    TEndpoint extends EndpointMethodMap[Method][Path]
   >(
     queryClient: QueryClient,
     method: Method,
@@ -221,9 +238,8 @@ export class RiseApiHooks {
 
   useGetCachedData<
     Method extends HttpMethod,
-    Endpoint extends EndpointByMethod[Method],
-    Path extends keyof Endpoint,
-    TEndpoint extends Endpoint[Path]
+    Path extends keyof EndpointMethodMap[Method],
+    TEndpoint extends EndpointMethodMap[Method][Path]
   >(
     method: Method,
     path: Path,

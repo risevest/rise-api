@@ -1,9 +1,6 @@
 import type {
   DeleteEndpoints,
-  Endpoint,
-  EndpointParameters,
   GetEndpoints,
-  Method,
   PatchEndpoints,
   PostEndpoints,
   PutEndpoints,
@@ -11,10 +8,17 @@ import type {
 
 export type HttpMethod = "post" | "get" | "patch" | "delete" | "put";
 export type Fetcher = (
-  method: Method,
+  method: HttpMethod,
   url: string,
-  parameters?: EndpointParameters | undefined
-) => Promise<Endpoint["response"]>;
+  parameters?:
+    | {
+        body?: unknown;
+        query?: Record<string, unknown>;
+        header?: Record<string, unknown>;
+        path?: Record<string, unknown>;
+      }
+    | undefined
+) => Promise<unknown>;
 
 export type RequiredKeys<T> = {
   [P in keyof T]-?: undefined extends T[P] ? never : P;
