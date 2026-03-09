@@ -1,4 +1,4 @@
-import { Static, StaticDecode, TAny, TSchema } from "@sinclair/typebox";
+import { StaticDecode, TAny, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import {
   FetchQueryOptions,
@@ -19,7 +19,15 @@ import {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { EndpointMethodMap, Fetcher, HttpMethod, MaybeOptionalArg, MaybeOptionalOptions } from "./client.types.js";
+import type {
+  EndpointMethodMap,
+  EndpointInputParameters,
+  EndpointOutputResponse,
+  Fetcher,
+  HttpMethod,
+  MaybeOptionalArg,
+  MaybeOptionalOptions,
+} from "./client.types.js";
 import type {
   DeleteEndpoints,
   GetEndpoints,
@@ -109,44 +117,38 @@ export class RiseApiClient {
     );
   }
 
-  get<Path extends keyof GetEndpoints, TEndpoint extends GetEndpoints[Path]>(
+  get<Path extends keyof GetEndpoints>(
     path: Path,
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): Promise<Static<TEndpoint>["response"]> {
+    ...params: MaybeOptionalArg<GetEndpoints[Path]["parameters"]>
+  ): Promise<GetEndpoints[Path]["response"]> {
     return this.#request("get", path, ...params);
   }
 
-  post<Path extends keyof PostEndpoints, TEndpoint extends PostEndpoints[Path]>(
+  post<Path extends keyof PostEndpoints>(
     path: Path,
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): Promise<Static<TEndpoint>["response"]> {
+    ...params: MaybeOptionalArg<PostEndpoints[Path]["parameters"]>
+  ): Promise<PostEndpoints[Path]["response"]> {
     return this.#request("post", path, ...params);
   }
 
-  patch<
-    Path extends keyof PatchEndpoints,
-    TEndpoint extends PatchEndpoints[Path]
-  >(
+  patch<Path extends keyof PatchEndpoints>(
     path: Path,
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): Promise<Static<TEndpoint>["response"]> {
+    ...params: MaybeOptionalArg<PatchEndpoints[Path]["parameters"]>
+  ): Promise<PatchEndpoints[Path]["response"]> {
     return this.#request("patch", path, ...params);
   }
 
-  delete<
-    Path extends keyof DeleteEndpoints,
-    TEndpoint extends DeleteEndpoints[Path]
-  >(
+  delete<Path extends keyof DeleteEndpoints>(
     path: Path,
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): Promise<Static<TEndpoint>["response"]> {
+    ...params: MaybeOptionalArg<DeleteEndpoints[Path]["parameters"]>
+  ): Promise<DeleteEndpoints[Path]["response"]> {
     return this.#request("delete", path, ...params);
   }
 
-  put<Path extends keyof PutEndpoints, TEndpoint extends PutEndpoints[Path]>(
+  put<Path extends keyof PutEndpoints>(
     path: Path,
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): Promise<Static<TEndpoint>["response"]> {
+    ...params: MaybeOptionalArg<PutEndpoints[Path]["parameters"]>
+  ): Promise<PutEndpoints[Path]["response"]> {
     return this.#request("put", path, ...params);
   }
 }
@@ -163,13 +165,13 @@ export class RiseApiHooks {
 
   getCacheKey<
     Method extends HttpMethod,
-    Path extends keyof EndpointMethodMap[Method],
-    TEndpoint extends EndpointMethodMap[Method][Path]
+    Path extends keyof EndpointMethodMap[Method]
   >(
     method: Method,
     path: Path,
-    //   @ts-expect-error cannot seem to index with parameters
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
+    ...params: MaybeOptionalArg<
+      EndpointInputParameters<EndpointMethodMap[Method][Path]>
+    >
   ): readonly [string, ...unknown[]] {
     const key = `${method}_${path as string}`;
     return [key, ...params];
@@ -177,17 +179,14 @@ export class RiseApiHooks {
 
   setCachedData<
     Method extends HttpMethod,
-    Path extends keyof EndpointMethodMap[Method],
-    TEndpoint extends EndpointMethodMap[Method][Path]
+    Path extends keyof EndpointMethodMap[Method]
   >(
     queryClient: QueryClient,
     method: Method,
     path: Path,
     ...options: MaybeOptionalOptions<
-      // @ts-expect-error cannot seem to index with response
-      Static<TEndpoint>["response"],
-      // @ts-expect-error cannot seem to index with parameters
-      Static<TEndpoint>["parameters"]
+      EndpointOutputResponse<EndpointMethodMap[Method][Path]>,
+      EndpointInputParameters<EndpointMethodMap[Method][Path]>
     >
   ): void {
     const [data, ...params] = options;
@@ -202,16 +201,13 @@ export class RiseApiHooks {
 
   useSetCachedData<
     Method extends HttpMethod,
-    Path extends keyof EndpointMethodMap[Method],
-    TEndpoint extends EndpointMethodMap[Method][Path]
+    Path extends keyof EndpointMethodMap[Method]
   >(
     method: Method,
     path: Path,
     ...options: MaybeOptionalOptions<
-      // @ts-expect-error cannot seem to index with response
-      Static<TEndpoint>["response"],
-      // @ts-expect-error cannot seem to index with parameters
-      Static<TEndpoint>["parameters"]
+      EndpointOutputResponse<EndpointMethodMap[Method][Path]>,
+      EndpointInputParameters<EndpointMethodMap[Method][Path]>
     >
   ): void {
     const queryClient = useQueryClient();
@@ -221,16 +217,15 @@ export class RiseApiHooks {
 
   getCachedData<
     Method extends HttpMethod,
-    Path extends keyof EndpointMethodMap[Method],
-    TEndpoint extends EndpointMethodMap[Method][Path]
+    Path extends keyof EndpointMethodMap[Method]
   >(
     queryClient: QueryClient,
     method: Method,
     path: Path,
-    //   @ts-expect-error cannot seem to index with parameters
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): //   @ts-expect-error cannot seem to index with response
-  Static<TEndpoint>["response"] | undefined {
+    ...params: MaybeOptionalArg<
+      EndpointInputParameters<EndpointMethodMap[Method][Path]>
+    >
+  ): EndpointOutputResponse<EndpointMethodMap[Method][Path]> | undefined {
     const queryKey = this.getCacheKey(method, path as any, ...params);
 
     return queryClient.getQueryData(queryKey);
@@ -238,28 +233,24 @@ export class RiseApiHooks {
 
   useGetCachedData<
     Method extends HttpMethod,
-    Path extends keyof EndpointMethodMap[Method],
-    TEndpoint extends EndpointMethodMap[Method][Path]
+    Path extends keyof EndpointMethodMap[Method]
   >(
     method: Method,
     path: Path,
-    //   @ts-expect-error cannot seem to index with parameters
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): //   @ts-expect-error cannot seem to index with parameters
-  Static<TEndpoint>["response"] | undefined {
+    ...params: MaybeOptionalArg<
+      EndpointInputParameters<EndpointMethodMap[Method][Path]>
+    >
+  ): EndpointOutputResponse<EndpointMethodMap[Method][Path]> | undefined {
     const queryClient = useQueryClient();
 
     return this.getCachedData(queryClient, method, path as any, ...params);
   }
 
-  prefetchData<
-    Path extends keyof GetEndpoints,
-    TEndpoint extends GetEndpoints[Path]
-  >(
+  prefetchData<Path extends keyof GetEndpoints>(
     queryClient: QueryClient,
     path: Path,
     ...rest: MaybeOptionalOptions<
-      Static<TEndpoint>["parameters"],
+      GetEndpoints[Path]["parameters"],
       FetchQueryOptions
     >
   ) {
@@ -274,13 +265,10 @@ export class RiseApiHooks {
     });
   }
 
-  usePrefetchData<
-    Path extends keyof GetEndpoints,
-    TEndpoint extends GetEndpoints[Path]
-  >(
+  usePrefetchData<Path extends keyof GetEndpoints>(
     path: Path,
     ...rest: MaybeOptionalOptions<
-      Static<TEndpoint>["parameters"],
+      GetEndpoints[Path]["parameters"],
       FetchQueryOptions
     >
   ) {
@@ -291,14 +279,13 @@ export class RiseApiHooks {
 
   useGet<
     Path extends keyof GetEndpoints,
-    TEndpoint extends GetEndpoints[Path],
-    TQueryFnData extends Static<TEndpoint>["response"],
+    TQueryFnData extends GetEndpoints[Path]["response"],
     TError = unknown,
     TData = TQueryFnData
   >(
     path: Path,
     ...rest: MaybeOptionalOptions<
-      Static<TEndpoint>["parameters"],
+      GetEndpoints[Path]["parameters"],
       Omit<UseQueryOptions<TQueryFnData, TError, TData>, "queryKey" | "queryFn">
     >
   ): UseQueryResult<TData, TError> & {
@@ -326,14 +313,13 @@ export class RiseApiHooks {
 
   useInfiniteGet<
     Path extends keyof GetEndpoints,
-    TEndpoint extends GetEndpoints[Path],
-    TData extends Static<TEndpoint>["response"],
+    TData extends GetEndpoints[Path]["response"],
     TError = Error
   >(
     path: Path,
     configMapper: (
       context: QueryFunctionContext<QueryKey>
-    ) => Static<TEndpoint>["parameters"],
+    ) => GetEndpoints[Path]["parameters"],
     options: Omit<
       UseInfiniteQueryOptions<TData, TError>,
       "queryKey" | "queryFn"
@@ -374,9 +360,8 @@ export class RiseApiHooks {
 
   usePost<
     Path extends keyof PostEndpoints,
-    TEndpoint extends PostEndpoints[Path],
-    TVariables extends Static<TEndpoint>["parameters"],
-    TData extends Static<TEndpoint>["response"],
+    TVariables extends PostEndpoints[Path]["parameters"],
+    TData extends PostEndpoints[Path]["response"],
     TError = unknown
   >(
     path: Path,
@@ -391,7 +376,7 @@ export class RiseApiHooks {
 
     return Object.assign(
       useMutation({
-        mutationFn: (params: Static<TEndpoint>["parameters"]) =>
+        mutationFn: (params: PostEndpoints[Path]["parameters"]) =>
           this.#client.post(path, params as never),
         mutationKey,
         ...(options as {}),
@@ -402,9 +387,8 @@ export class RiseApiHooks {
 
   usePatch<
     Path extends keyof PatchEndpoints,
-    TEndpoint extends PatchEndpoints[Path],
-    TVariables extends Static<TEndpoint>["parameters"],
-    TData extends Static<TEndpoint>["response"],
+    TVariables extends PatchEndpoints[Path]["parameters"],
+    TData extends PatchEndpoints[Path]["response"],
     TError = unknown
   >(
     path: Path,
@@ -430,9 +414,8 @@ export class RiseApiHooks {
 
   useDelete<
     Path extends keyof DeleteEndpoints,
-    TEndpoint extends DeleteEndpoints[Path],
-    TVariables extends Static<TEndpoint>["parameters"],
-    TData extends Static<TEndpoint>["response"],
+    TVariables extends DeleteEndpoints[Path]["parameters"],
+    TData extends DeleteEndpoints[Path]["response"],
     TError = unknown
   >(
     path: Path,
@@ -458,9 +441,8 @@ export class RiseApiHooks {
 
   usePut<
     Path extends keyof PutEndpoints,
-    TEndpoint extends PutEndpoints[Path],
-    TVariables extends Static<TEndpoint>["parameters"],
-    TData extends Static<TEndpoint>["response"],
+    TVariables extends PutEndpoints[Path]["parameters"],
+    TData extends PutEndpoints[Path]["response"],
     TError = unknown
   >(
     path: Path,

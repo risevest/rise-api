@@ -30,6 +30,12 @@ export type MaybeOptionalOptions<T, O> = RequiredKeys<T> extends never
   ? [config?: T, options?: O]
   : [config: T, options?: O];
 
+export type EndpointInputParameters<TEndpoint> =
+  TEndpoint extends { parameters: infer TParameters } ? TParameters : never;
+
+export type EndpointOutputResponse<TEndpoint> =
+  TEndpoint extends { response: infer TResponse } ? TResponse : never;
+
 export type EndpointMethodMap = {
   delete: DeleteEndpoints;
   get: GetEndpoints;
