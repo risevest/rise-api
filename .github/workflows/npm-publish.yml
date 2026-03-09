@@ -1,9 +1,13 @@
 name: Npm Publish
 
-on: 
+on:
   release:
     types: [published]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   build:
@@ -18,12 +22,17 @@ jobs:
       - name: 🍞 Setup Bun
         uses: oven-sh/setup-bun@v1
 
+      - name: 🟢 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
       - name: 📦 Install packages and prebuild
         run: bun install --frozen-lockfile
         shell: bash
 
       - name: 🚀 Publish
-        run: bun publish --access public
+        run: npm publish --access public
         env:
           CI: true
-          NPM_CONFIG_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
