@@ -26,6 +26,17 @@ program
         { stdio: "inherit" }
       );
 
+      // Avoid TS7056 by preventing a huge inferred literal type here.
+      const contractSource = fs.readFileSync(OUTPUT_FILE, "utf8");
+      const endpointByMethodPattern = /export const EndpointByMethod\s*=\s*{/;
+      if (endpointByMethodPattern.test(contractSource)) {
+        const patchedSource = contractSource.replace(
+          endpointByMethodPattern,
+          "export const EndpointByMethod: Record<string, Record<string, Endpoint>> = {"
+        );
+        fs.writeFileSync(OUTPUT_FILE, patchedSource, "utf8");
+      }
+
       console.log("Compiling TypeScript to JavaScript...");
       execSync(
         `npx tsc --noCheck --project "${path.join(
