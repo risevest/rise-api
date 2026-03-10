@@ -1,5 +1,4 @@
-import { Static, StaticDecode, TAny, TSchema } from "@sinclair/typebox";
-import { Value } from "@sinclair/typebox/value";
+import type { StaticDecode, TAny, TSchema } from "@sinclair/typebox";
 import {
   FetchQueryOptions,
   InfiniteData,
@@ -19,19 +18,31 @@ import {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { EndpointMethodMap, Fetcher, HttpMethod, MaybeOptionalArg, MaybeOptionalOptions } from "./client.types.js";
-import {
+import type {
+  EndpointMethodMap,
+  EndpointInputParameters,
+  EndpointOutputResponse,
+  Fetcher,
+  HttpMethod,
+  MaybeOptionalArg,
+  MaybeOptionalOptions,
+} from "./client.types.js";
+import type {
   DeleteEndpoints,
-  EndpointByMethod,
   GetEndpoints,
   PatchEndpoints,
   PostEndpoints,
   PutEndpoints,
 } from "./contract.js";
 
+type TypeBoxValueModule = typeof import("@sinclair/typebox/value");
+type ContractModule = typeof import("./contract.js");
+
 export class RiseApiClient {
   #baseUrl: string = "";
   #enabledParsing: boolean = true;
+  #valueModule?: Promise<TypeBoxValueModule>;
+  #contractModule?: Promise<ContractModule>;
 
   constructor(public fetcher: Fetcher) {}
 
@@ -45,15 +56,32 @@ export class RiseApiClient {
     return this;
   }
 
-  #parse<T extends TSchema>(schema: T, value: unknown): StaticDecode<T, []> {
-    return this.#enabledParsing ? Value.Parse(schema, value) : value;
+  async #getValueModule(): Promise<TypeBoxValueModule> {
+    if (!this.#valueModule) {
+      this.#valueModule = import("@sinclair/typebox/value");
+    }
+
+    return this.#valueModule;
   }
 
-  #parseAsync<T extends TSchema>(
+  async #getContractModule(): Promise<ContractModule> {
+    if (!this.#contractModule) {
+      this.#contractModule = import("./contract.js");
+    }
+
+    return this.#contractModule;
+  }
+
+  async #parse<T extends TSchema>(
     schema: T,
-    value: Promise<unknown>
+    value: unknown
   ): Promise<StaticDecode<T, []>> {
-    return value.then((res) => this.#parse(schema, res));
+    if (!this.#enabledParsing) {
+      return value as StaticDecode<T, []>;
+    }
+
+    const { Value } = await this.#getValueModule();
+    return Value.Parse(schema, value);
   }
 
   #constructPath(template: string, params?: Record<string, string>) {
@@ -69,63 +97,75 @@ export class RiseApiClient {
     });
   }
 
-  #request<M extends HttpMethod, P extends keyof EndpointMethodMap[M]>(
+  async #request<M extends HttpMethod, P extends keyof EndpointMethodMap[M]>(
     method: M,
     path: P,
     ...params: any[]
   ): Promise<any> {
     const parameters = params[0];
     const finalPath = this.#constructPath(path as string, parameters?.path);
-    const EndpointSchema = (EndpointByMethod[method][path] as TAny).properties;
 
-    return this.#parseAsync(
-      EndpointSchema.response,
-      this.fetcher(
-        method,
-        this.#baseUrl + finalPath,
-        this.#parse(EndpointSchema.parameters as TAny, parameters)
-      )
+    if (!this.#enabledParsing) {
+      return this.fetcher(method, this.#baseUrl + finalPath, parameters);
+    }
+
+    const { getEndpointSchema } = await this.#getContractModule();
+    const endpointSchema = getEndpointSchema(method, path as string) as
+      | TAny
+      | undefined;
+
+    if (!endpointSchema?.properties) {
+      throw new Error(
+        `Unknown endpoint schema for ${method.toUpperCase()} ${String(path)}`
+      );
+    }
+
+    const endpointProperties = endpointSchema.properties as {
+      parameters?: TAny;
+      response: TAny;
+    };
+    const parsedParameters = endpointProperties.parameters
+      ? await this.#parse(endpointProperties.parameters, parameters)
+      : parameters;
+
+    return this.#parse(
+      endpointProperties.response,
+      await this.fetcher(method, this.#baseUrl + finalPath, parsedParameters)
     );
   }
 
-  get<Path extends keyof GetEndpoints, TEndpoint extends GetEndpoints[Path]>(
+  get<Path extends keyof GetEndpoints>(
     path: Path,
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): Promise<Static<TEndpoint>["response"]> {
+    ...params: MaybeOptionalArg<GetEndpoints[Path]["parameters"]>
+  ): Promise<GetEndpoints[Path]["response"]> {
     return this.#request("get", path, ...params);
   }
 
-  post<Path extends keyof PostEndpoints, TEndpoint extends PostEndpoints[Path]>(
+  post<Path extends keyof PostEndpoints>(
     path: Path,
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): Promise<Static<TEndpoint>["response"]> {
+    ...params: MaybeOptionalArg<PostEndpoints[Path]["parameters"]>
+  ): Promise<PostEndpoints[Path]["response"]> {
     return this.#request("post", path, ...params);
   }
 
-  patch<
-    Path extends keyof PatchEndpoints,
-    TEndpoint extends PatchEndpoints[Path]
-  >(
+  patch<Path extends keyof PatchEndpoints>(
     path: Path,
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): Promise<Static<TEndpoint>["response"]> {
+    ...params: MaybeOptionalArg<PatchEndpoints[Path]["parameters"]>
+  ): Promise<PatchEndpoints[Path]["response"]> {
     return this.#request("patch", path, ...params);
   }
 
-  delete<
-    Path extends keyof DeleteEndpoints,
-    TEndpoint extends DeleteEndpoints[Path]
-  >(
+  delete<Path extends keyof DeleteEndpoints>(
     path: Path,
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): Promise<Static<TEndpoint>["response"]> {
+    ...params: MaybeOptionalArg<DeleteEndpoints[Path]["parameters"]>
+  ): Promise<DeleteEndpoints[Path]["response"]> {
     return this.#request("delete", path, ...params);
   }
 
-  put<Path extends keyof PutEndpoints, TEndpoint extends PutEndpoints[Path]>(
+  put<Path extends keyof PutEndpoints>(
     path: Path,
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): Promise<Static<TEndpoint>["response"]> {
+    ...params: MaybeOptionalArg<PutEndpoints[Path]["parameters"]>
+  ): Promise<PutEndpoints[Path]["response"]> {
     return this.#request("put", path, ...params);
   }
 }
@@ -142,14 +182,13 @@ export class RiseApiHooks {
 
   getCacheKey<
     Method extends HttpMethod,
-    Endpoint extends EndpointByMethod[Method],
-    Path extends keyof Endpoint,
-    TEndpoint extends Endpoint[Path]
+    Path extends keyof EndpointMethodMap[Method]
   >(
     method: Method,
     path: Path,
-    //   @ts-expect-error cannot seem to index with parameters
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
+    ...params: MaybeOptionalArg<
+      EndpointInputParameters<EndpointMethodMap[Method][Path]>
+    >
   ): readonly [string, ...unknown[]] {
     const key = `${method}_${path as string}`;
     return [key, ...params];
@@ -157,18 +196,14 @@ export class RiseApiHooks {
 
   setCachedData<
     Method extends HttpMethod,
-    Endpoint extends EndpointByMethod[Method],
-    Path extends keyof Endpoint,
-    TEndpoint extends Endpoint[Path]
+    Path extends keyof EndpointMethodMap[Method]
   >(
     queryClient: QueryClient,
     method: Method,
     path: Path,
     ...options: MaybeOptionalOptions<
-      // @ts-expect-error cannot seem to index with response
-      Static<TEndpoint>["response"],
-      // @ts-expect-error cannot seem to index with parameters
-      Static<TEndpoint>["parameters"]
+      EndpointOutputResponse<EndpointMethodMap[Method][Path]>,
+      EndpointInputParameters<EndpointMethodMap[Method][Path]>
     >
   ): void {
     const [data, ...params] = options;
@@ -183,17 +218,13 @@ export class RiseApiHooks {
 
   useSetCachedData<
     Method extends HttpMethod,
-    Endpoint extends EndpointByMethod[Method],
-    Path extends keyof Endpoint,
-    TEndpoint extends Endpoint[Path]
+    Path extends keyof EndpointMethodMap[Method]
   >(
     method: Method,
     path: Path,
     ...options: MaybeOptionalOptions<
-      // @ts-expect-error cannot seem to index with response
-      Static<TEndpoint>["response"],
-      // @ts-expect-error cannot seem to index with parameters
-      Static<TEndpoint>["parameters"]
+      EndpointOutputResponse<EndpointMethodMap[Method][Path]>,
+      EndpointInputParameters<EndpointMethodMap[Method][Path]>
     >
   ): void {
     const queryClient = useQueryClient();
@@ -203,17 +234,15 @@ export class RiseApiHooks {
 
   getCachedData<
     Method extends HttpMethod,
-    Endpoint extends EndpointByMethod[Method],
-    Path extends keyof Endpoint,
-    TEndpoint extends Endpoint[Path]
+    Path extends keyof EndpointMethodMap[Method]
   >(
     queryClient: QueryClient,
     method: Method,
     path: Path,
-    //   @ts-expect-error cannot seem to index with parameters
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): //   @ts-expect-error cannot seem to index with response
-  Static<TEndpoint>["response"] | undefined {
+    ...params: MaybeOptionalArg<
+      EndpointInputParameters<EndpointMethodMap[Method][Path]>
+    >
+  ): EndpointOutputResponse<EndpointMethodMap[Method][Path]> | undefined {
     const queryKey = this.getCacheKey(method, path as any, ...params);
 
     return queryClient.getQueryData(queryKey);
@@ -221,29 +250,24 @@ export class RiseApiHooks {
 
   useGetCachedData<
     Method extends HttpMethod,
-    Endpoint extends EndpointByMethod[Method],
-    Path extends keyof Endpoint,
-    TEndpoint extends Endpoint[Path]
+    Path extends keyof EndpointMethodMap[Method]
   >(
     method: Method,
     path: Path,
-    //   @ts-expect-error cannot seem to index with parameters
-    ...params: MaybeOptionalArg<Static<TEndpoint>["parameters"]>
-  ): //   @ts-expect-error cannot seem to index with parameters
-  Static<TEndpoint>["response"] | undefined {
+    ...params: MaybeOptionalArg<
+      EndpointInputParameters<EndpointMethodMap[Method][Path]>
+    >
+  ): EndpointOutputResponse<EndpointMethodMap[Method][Path]> | undefined {
     const queryClient = useQueryClient();
 
     return this.getCachedData(queryClient, method, path as any, ...params);
   }
 
-  prefetchData<
-    Path extends keyof GetEndpoints,
-    TEndpoint extends GetEndpoints[Path]
-  >(
+  prefetchData<Path extends keyof GetEndpoints>(
     queryClient: QueryClient,
     path: Path,
     ...rest: MaybeOptionalOptions<
-      Static<TEndpoint>["parameters"],
+      GetEndpoints[Path]["parameters"],
       FetchQueryOptions
     >
   ) {
@@ -258,13 +282,10 @@ export class RiseApiHooks {
     });
   }
 
-  usePrefetchData<
-    Path extends keyof GetEndpoints,
-    TEndpoint extends GetEndpoints[Path]
-  >(
+  usePrefetchData<Path extends keyof GetEndpoints>(
     path: Path,
     ...rest: MaybeOptionalOptions<
-      Static<TEndpoint>["parameters"],
+      GetEndpoints[Path]["parameters"],
       FetchQueryOptions
     >
   ) {
@@ -275,14 +296,13 @@ export class RiseApiHooks {
 
   useGet<
     Path extends keyof GetEndpoints,
-    TEndpoint extends GetEndpoints[Path],
-    TQueryFnData extends Static<TEndpoint>["response"],
+    TQueryFnData extends GetEndpoints[Path]["response"],
     TError = unknown,
     TData = TQueryFnData
   >(
     path: Path,
     ...rest: MaybeOptionalOptions<
-      Static<TEndpoint>["parameters"],
+      GetEndpoints[Path]["parameters"],
       Omit<UseQueryOptions<TQueryFnData, TError, TData>, "queryKey" | "queryFn">
     >
   ): UseQueryResult<TData, TError> & {
@@ -310,14 +330,13 @@ export class RiseApiHooks {
 
   useInfiniteGet<
     Path extends keyof GetEndpoints,
-    TEndpoint extends GetEndpoints[Path],
-    TData extends Static<TEndpoint>["response"],
+    TData extends GetEndpoints[Path]["response"],
     TError = Error
   >(
     path: Path,
     configMapper: (
       context: QueryFunctionContext<QueryKey>
-    ) => Static<TEndpoint>["parameters"],
+    ) => GetEndpoints[Path]["parameters"],
     options: Omit<
       UseInfiniteQueryOptions<TData, TError>,
       "queryKey" | "queryFn"
@@ -358,9 +377,8 @@ export class RiseApiHooks {
 
   usePost<
     Path extends keyof PostEndpoints,
-    TEndpoint extends PostEndpoints[Path],
-    TVariables extends Static<TEndpoint>["parameters"],
-    TData extends Static<TEndpoint>["response"],
+    TVariables extends PostEndpoints[Path]["parameters"],
+    TData extends PostEndpoints[Path]["response"],
     TError = unknown
   >(
     path: Path,
@@ -375,7 +393,7 @@ export class RiseApiHooks {
 
     return Object.assign(
       useMutation({
-        mutationFn: (params: Static<TEndpoint>["parameters"]) =>
+        mutationFn: (params: PostEndpoints[Path]["parameters"]) =>
           this.#client.post(path, params as never),
         mutationKey,
         ...(options as {}),
@@ -386,9 +404,8 @@ export class RiseApiHooks {
 
   usePatch<
     Path extends keyof PatchEndpoints,
-    TEndpoint extends PatchEndpoints[Path],
-    TVariables extends Static<TEndpoint>["parameters"],
-    TData extends Static<TEndpoint>["response"],
+    TVariables extends PatchEndpoints[Path]["parameters"],
+    TData extends PatchEndpoints[Path]["response"],
     TError = unknown
   >(
     path: Path,
@@ -414,9 +431,8 @@ export class RiseApiHooks {
 
   useDelete<
     Path extends keyof DeleteEndpoints,
-    TEndpoint extends DeleteEndpoints[Path],
-    TVariables extends Static<TEndpoint>["parameters"],
-    TData extends Static<TEndpoint>["response"],
+    TVariables extends DeleteEndpoints[Path]["parameters"],
+    TData extends DeleteEndpoints[Path]["response"],
     TError = unknown
   >(
     path: Path,
@@ -442,9 +458,8 @@ export class RiseApiHooks {
 
   usePut<
     Path extends keyof PutEndpoints,
-    TEndpoint extends PutEndpoints[Path],
-    TVariables extends Static<TEndpoint>["parameters"],
-    TData extends Static<TEndpoint>["response"],
+    TVariables extends PutEndpoints[Path]["parameters"],
+    TData extends PutEndpoints[Path]["response"],
     TError = unknown
   >(
     path: Path,
