@@ -1,5 +1,4 @@
-import { StaticDecode, TAny, TSchema } from "@sinclair/typebox";
-import { Value } from "@sinclair/typebox/value";
+import type { StaticDecode, TAny, TSchema } from "@sinclair/typebox";
 import {
   FetchQueryOptions,
   InfiniteData,
@@ -36,9 +35,14 @@ import type {
   PutEndpoints,
 } from "./contract.js";
 
+type TypeBoxValueModule = typeof import("@sinclair/typebox/value");
+type ContractModule = typeof import("./contract.js");
+
 export class RiseApiClient {
   #baseUrl: string = "";
   #enabledParsing: boolean = true;
+  #valueModule?: Promise<TypeBoxValueModule>;
+  #contractModule?: Promise<ContractModule>;
 
   constructor(public fetcher: Fetcher) {}
 
@@ -52,15 +56,39 @@ export class RiseApiClient {
     return this;
   }
 
-  #parse<T extends TSchema>(schema: T, value: unknown): StaticDecode<T, []> {
-    return this.#enabledParsing ? Value.Parse(schema, value) : value;
+  async #getValueModule(): Promise<TypeBoxValueModule> {
+    if (!this.#valueModule) {
+      this.#valueModule = import("@sinclair/typebox/value");
+    }
+
+    return this.#valueModule;
   }
 
-  #parseAsync<T extends TSchema>(
+  async #getContractModule(): Promise<ContractModule> {
+    if (!this.#contractModule) {
+      this.#contractModule = import("./contract.js");
+    }
+
+    return this.#contractModule;
+  }
+
+  async #parse<T extends TSchema>(
+    schema: T,
+    value: unknown
+  ): Promise<StaticDecode<T, []>> {
+    if (!this.#enabledParsing) {
+      return value as StaticDecode<T, []>;
+    }
+
+    const { Value } = await this.#getValueModule();
+    return Value.Parse(schema, value);
+  }
+
+  async #parseAsync<T extends TSchema>(
     schema: T,
     value: Promise<unknown>
   ): Promise<StaticDecode<T, []>> {
-    return value.then((res) => this.#parse(schema, res));
+    return this.#parse(schema, await value);
   }
 
   #constructPath(template: string, params?: Record<string, string>) {
@@ -88,7 +116,7 @@ export class RiseApiClient {
       return this.fetcher(method, this.#baseUrl + finalPath, parameters);
     }
 
-    const { getEndpointSchema } = await import("./contract.js");
+    const { getEndpointSchema } = await this.#getContractModule();
     const endpointSchema = getEndpointSchema(method, path as string) as
       | TAny
       | undefined;
@@ -104,16 +132,12 @@ export class RiseApiClient {
       response: TAny;
     };
     const parsedParameters = endpointProperties.parameters
-      ? this.#parse(endpointProperties.parameters, parameters)
+      ? await this.#parse(endpointProperties.parameters, parameters)
       : parameters;
 
     return this.#parseAsync(
       endpointProperties.response,
-      this.fetcher(
-        method,
-        this.#baseUrl + finalPath,
-        parsedParameters
-      )
+      this.fetcher(method, this.#baseUrl + finalPath, parsedParameters)
     );
   }
 
