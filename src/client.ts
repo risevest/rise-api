@@ -84,13 +84,6 @@ export class RiseApiClient {
     return Value.Parse(schema, value);
   }
 
-  async #parseAsync<T extends TSchema>(
-    schema: T,
-    value: Promise<unknown>
-  ): Promise<StaticDecode<T, []>> {
-    return this.#parse(schema, await value);
-  }
-
   #constructPath(template: string, params?: Record<string, string>) {
     if (!params) {
       return template;
@@ -135,9 +128,9 @@ export class RiseApiClient {
       ? await this.#parse(endpointProperties.parameters, parameters)
       : parameters;
 
-    return this.#parseAsync(
+    return this.#parse(
       endpointProperties.response,
-      this.fetcher(method, this.#baseUrl + finalPath, parsedParameters)
+      await this.fetcher(method, this.#baseUrl + finalPath, parsedParameters)
     );
   }
 
