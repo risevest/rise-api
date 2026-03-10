@@ -16,10 +16,14 @@
     "rise",
     "cli"
   ],
-  "author": {
-    "name": "Balogunofafrica",
-    "url": "https://github.com/Balogunofafrica"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/risevest/rise-api.git"
   },
+  "bugs": "https://github.com/risevest/rise-api/issues",
+  "contributors": [
+    "Rise Developers"
+  ],
   "bin": {
     "rise-api": "./bin/cli.cjs"
   },
