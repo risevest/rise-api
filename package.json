@@ -1,6 +1,6 @@
 {
   "name": "@risemaxi/api-client",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Client Library for Rise",
   "type": "module",
   "main": "dist/index.js",
@@ -42,24 +42,5 @@
     "commander": "^13.1.0",
     "typed-openapi": "^0.8.0",
     "typescript": "^5.8.3"
-  },
-  "react-native": "dist/index.js",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
-    },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "import": "./dist/client.js",
-      "default": "./dist/client.js"
-    },
-    "./contract": {
-      "types": "./dist/contract.d.ts",
-      "import": "./dist/contract.js",
-      "default": "./dist/contract.js"
-    },
-    "./package.json": "./package.json"
   }
 }
