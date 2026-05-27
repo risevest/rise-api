@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "strict": true,
+    "rootDir": "./src",
     "outDir": "./dist",
     "moduleDetection": "force",
     "allowJs": false,
@@ -14,7 +15,6 @@
     "declaration": true,
     "declarationMap": true
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["src/**/*"]
 }
+
