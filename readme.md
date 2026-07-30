@@ -14,8 +14,9 @@ OR
 
 ```shell
 yarn add @risemaxi/api-client
-OR
 ```
+
+OR
 
 ```shell
 bun install @risemaxi/api-client
